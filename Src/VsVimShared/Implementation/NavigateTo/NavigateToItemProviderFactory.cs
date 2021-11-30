@@ -9,6 +9,9 @@ using Vim;
 using System.Windows.Input;
 using System.Collections.Generic;
 using Vim.VisualStudio.Implementation.Misc;
+using Vim.UI.Wpf;
+using Microsoft.VisualStudio.Threading;
+using System.Threading.Tasks;
 
 namespace Vim.VisualStudio.Implementation.NavigateTo
 {
@@ -22,24 +25,19 @@ namespace Vim.VisualStudio.Implementation.NavigateTo
     [Export(typeof(IVisualModeSelectionOverride))]
     internal sealed class NavigateToItemProviderFactory : INavigateToItemProviderFactory, IThreadCommunicator, IVisualModeSelectionOverride
     {
-        /// <summary>
-        /// Ideally we would use IProtectedOperations here.  However NavigateTo Window is a Windows Form
-        /// window and it suppresses the pumping of the WPF message loop which IProtectedOperations 
-        /// depends on.  Using the WindowsFormsSynchronizationContext out of necessity here
-        /// </summary>
-        private readonly SynchronizationContext _synchronizationContext;
+        private readonly JoinableTaskFactory _joinableTaskFactory;
         private readonly IVim _vim;
         private readonly ITextManager _textManager;
         private readonly UnwantedSelectionHandler _unwantedSelectionHandler;
         private bool _inSearch;
 
         [ImportingConstructor]
-        internal NavigateToItemProviderFactory(IVim vim, ITextManager textManager)
+        internal NavigateToItemProviderFactory(IVim vim, ITextManager textManager, IJoinableTaskFactoryProvider joinableTaskFactoryProvider)
         {
             _vim = vim;
             _textManager = textManager;
-            _synchronizationContext = WindowsFormsSynchronizationContext.Current;
             _unwantedSelectionHandler = new UnwantedSelectionHandler(_vim);
+            _joinableTaskFactory = joinableTaskFactoryProvider.JoinableTaskFactory;
         }
 
         private void OnSearchStarted(string searchText)
@@ -78,23 +76,12 @@ namespace Vim.VisualStudio.Implementation.NavigateTo
             }
         }
 
-        private void CallOnMainThread(Action action)
+        private async Task PostOnMainThreadAsync(Action action)
         {
-            void wrappedAction()
-            {
-                try
-                {
-                    action();
-                }
-                catch
-                {
-                    // Don't let the exception propagate to the message loop and take down VS
-                }
-            }
-
             try
             {
-                _synchronizationContext.Post(_ => wrappedAction(), null);
+                await _joinableTaskFactory.SwitchToMainThreadAsync();
+                action();
             }
             catch
             {
@@ -126,7 +113,7 @@ namespace Vim.VisualStudio.Implementation.NavigateTo
         /// </summary>
         void IThreadCommunicator.StartSearch(string searchText)
         {
-            CallOnMainThread(() => OnSearchStarted(searchText));
+            _ = PostOnMainThreadAsync(() => OnSearchStarted(searchText));
         }
 
         /// <summary>
@@ -134,7 +121,7 @@ namespace Vim.VisualStudio.Implementation.NavigateTo
         /// </summary>
         void IThreadCommunicator.StopSearch(string searchText)
         {
-            CallOnMainThread(() => OnSearchStopped(searchText));
+            _ = PostOnMainThreadAsync(() => OnSearchStopped(searchText));
         }
 
         /// <summary>
@@ -142,7 +129,7 @@ namespace Vim.VisualStudio.Implementation.NavigateTo
         /// </summary>
         void IThreadCommunicator.Dispose()
         {
-            CallOnMainThread(Dispose);
+            _ = PostOnMainThreadAsync(Dispose);
         }
 
         #endregion

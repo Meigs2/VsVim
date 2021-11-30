@@ -377,7 +377,9 @@ namespace Vim.UI.Wpf
                     var stderrTask = Task.Run(() => stderr.ReadToEnd());
                     if (process.WaitForExit(timeout))
                     {
+#pragma warning disable VSTHRD002
                         return new RunCommandResults(process.ExitCode, stdoutTask.Result, stderrTask.Result);
+#pragma warning restore VSTHRD002
                     }
                 }
                 else
