@@ -15,6 +15,13 @@
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(NUGET_PACKAGES)</NuGetPackageRoot> <!-- Respect environment variable if set -->
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == '' AND '$(OS)' == 'Windows_NT'">$(UserProfile)/.nuget/packages/</NuGetPackageRoot>
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == '' AND '$(OS)' != 'Windows_NT'">$(HOME)/.nuget/packages/</NuGetPackageRoot>
+
+    <!-- 
+      VSTHRD010 attempts to ensure all calls to sensitive VS APIs, or methods that call sensitive VS APIs
+      occur on the main thread. Resolving that ends up littering the code with the same EnsureOnUIThread 
+      calls all through the code that don't seem to add a lot of value. Hence disabling this rule.
+    -->
+    <NoWarn>$(NoWarn),VSTHRD010</NoWarn>
   </PropertyGroup>
 
   <!--
