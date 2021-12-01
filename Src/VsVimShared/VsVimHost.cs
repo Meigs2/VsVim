@@ -269,7 +269,6 @@ namespace Vim.VisualStudio
         private readonly IVsRunningDocumentTable _runningDocumentTable;
         private readonly IVsShell _vsShell;
         private readonly ICommandDispatcher _commandDispatcher;
-        private readonly IProtectedOperations _protectedOperations;
         private readonly IClipboardDevice _clipboardDevice;
         private readonly SettingsSync _settingsSync;
 
@@ -333,20 +332,18 @@ namespace Vim.VisualStudio
             ICSharpScriptExecutor csharpScriptExecutor,
             IVimApplicationSettings vimApplicationSettings,
             IExtensionAdapterBroker extensionAdapterBroker,
-            IProtectedOperations protectedOperations,
+            IVimProtectedOperations vimProtectedOperations,
             IMarkDisplayUtil markDisplayUtil,
             IControlCharUtil controlCharUtil,
             ICommandDispatcher commandDispatcher,
             SVsServiceProvider serviceProvider,
-            IClipboardDevice clipboardDevice,
-            IJoinableTaskFactoryProvider joinableTaskFactoryProvider) :
-            base(
-                  protectedOperations,
+            IClipboardDevice clipboardDevice)
+            : base(
+                  vimProtectedOperations,
                   textBufferFactoryService,
                   textEditorFactoryService,
                   textDocumentFactoryService,
-                  editorOperationsFactoryService,
-                  joinableTaskFactoryProvider.JoinableTaskFactory)
+                  editorOperationsFactoryService)
         {
             _vsAdapter = adapter;
             _editorAdaptersFactoryService = editorAdaptersFactoryService;
@@ -360,7 +357,6 @@ namespace Vim.VisualStudio
             _extensionAdapterBroker = extensionAdapterBroker;
             _runningDocumentTable = serviceProvider.GetService<SVsRunningDocumentTable, IVsRunningDocumentTable>();
             _vsShell = serviceProvider.GetService<SVsShell, IVsShell>();
-            _protectedOperations = protectedOperations;
             _commandDispatcher = commandDispatcher;
             _clipboardDevice = clipboardDevice;
 
@@ -383,7 +379,7 @@ namespace Vim.VisualStudio
             // completed. Additionally using IProtectedOperations to guard against exceptions 
             // https://github.com/VsVim/VsVim/issues/2249
 
-            _protectedOperations.BeginInvoke(initOutputPaneCore, DispatcherPriority.ApplicationIdle);
+            _ = VimProtectedOperations.RunInMainThreadAsync(initOutputPaneCore, dispatcherPriority: DispatcherPriority.ApplicationIdle);
 
             void initOutputPaneCore()
             {
@@ -501,7 +497,7 @@ namespace Vim.VisualStudio
 
                 // Perform the action.
                 var protectedAction =
-                    _protectedOperations.GetProtectedAction(() => action.Invoke(null));
+                    VimProtectedOperations.GetProtectedAction(() => action.Invoke(null));
                 protectedAction();
             }
 
@@ -530,7 +526,7 @@ namespace Vim.VisualStudio
             }
             catch (Exception ex)
             {
-                _protectedOperations.Report(ex);
+                VimProtectedOperations.Report(ex);
             }
         }
 
@@ -920,7 +916,7 @@ namespace Vim.VisualStudio
             }
             catch (Exception ex)
             {
-                _protectedOperations.Report(ex);
+                VimProtectedOperations.Report(ex);
             }
             return FSharpOption<ListItem>.None;
         }
@@ -1004,7 +1000,7 @@ namespace Vim.VisualStudio
             }
             catch (Exception ex)
             {
-                _protectedOperations.Report(ex);
+                VimProtectedOperations.Report(ex);
             }
             return FSharpOption<ListItem>.None;
         }

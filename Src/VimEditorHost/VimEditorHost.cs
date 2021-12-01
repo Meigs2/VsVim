@@ -44,7 +44,7 @@ namespace Vim.EditorHost
         public IClipboardDevice ClipboardDevice {get;}
         public IMouseDevice MouseDevice {get;}
         public IKeyboardDevice KeyboardDevice {get;}
-        public IProtectedOperations ProtectedOperations {get;}
+        public IVimProtectedOperations VimProtectedOperations {get;}
         public IVimErrorDetector VimErrorDetector {get;}
         internal IBulkOperations BulkOperations {get;}
         public IEditorFormatMapService EditorFormatMapService {get;}
@@ -53,6 +53,7 @@ namespace Vim.EditorHost
         public IVimData VimData => Vim.VimData;
         public IVimHost VimHost => Vim.VimHost;
         public IVimGlobalKeyMap GlobalKeyMap => Vim.GlobalKeyMap;
+        public IProtectedOperations ProtectedOperations => VimProtectedOperations;
 
         public VimEditorHost(CompositionContainer compositionContainer)
         {
@@ -77,7 +78,7 @@ namespace Vim.EditorHost
             FoldManagerFactory = CompositionContainer.GetExportedValue<IFoldManagerFactory>();
             BulkOperations = CompositionContainer.GetExportedValue<IBulkOperations>();
             KeyUtil = CompositionContainer.GetExportedValue<IKeyUtil>();
-            ProtectedOperations = CompositionContainer.GetExportedValue<IProtectedOperations>();
+            VimProtectedOperations = CompositionContainer.GetExportedValue<IVimProtectedOperations>();
             KeyboardDevice = CompositionContainer.GetExportedValue<IKeyboardDevice>();
             MouseDevice = CompositionContainer.GetExportedValue<IMouseDevice>();
             ClipboardDevice = CompositionContainer.GetExportedValue<IClipboardDevice>();

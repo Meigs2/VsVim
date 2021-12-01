@@ -73,7 +73,7 @@ namespace Vim.VisualStudio.UnitTest
             _monitor = new ExternalEditMonitor(
                 _vimApplicationSettings.Object,
                 _buffer,
-                ProtectedOperations,
+                VimProtectedOperations,
                 textLines,
                 taggerList.ToReadOnlyCollectionShallow(),
                 adapterList.ToReadOnlyCollectionShallow());

@@ -6,26 +6,28 @@ using Xunit;
 using Vim;
 using Vim.EditorHost;
 using Vim.UI.Wpf;
+using System.Threading.Tasks;
+using Vim.UI.Wpf.Implementation.Misc;
 
 namespace Vim.UnitTest
 {
-    public sealed class ProtectedOperationsTest
+    public sealed class ProtectedOperationsTest : VimTestBase
     {
         private readonly Mock<IExtensionErrorHandler> _errorHandler;
-        private readonly ProtectedOperations _protectedOperationsRaw;
-        private readonly IProtectedOperations _protectedOperations;
+        private readonly VimProtectedOperations _protectedOperationsRaw;
+        private readonly IVimProtectedOperations _protectedOperations;
 
         public ProtectedOperationsTest()
         {
             _errorHandler = new Mock<IExtensionErrorHandler>(MockBehavior.Strict);
-            _protectedOperationsRaw = new ProtectedOperations(_errorHandler.Object);
+            _protectedOperationsRaw = new VimProtectedOperations(JoinableTaskFactory, new[] { new Lazy<IExtensionErrorHandler>(() => _errorHandler.Object) });
             _protectedOperations = _protectedOperationsRaw;
         }
 
         /// <summary>
         /// Verify the returned action will execute the original one
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetProtectedAction_Standard()
         {
             var didRun = false;
@@ -38,7 +40,7 @@ namespace Vim.UnitTest
         /// Verify that when the original action throws that it is passed on to the
         /// listed IExtensionErrorHandlers
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetProtectedAction_Throws()
         {
             var exception = new Exception("hello world");
@@ -51,7 +53,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Verify the returned EventHandler will execute the original one
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetProtectedEventHandler_Standard()
         {
             var didRun = false;
@@ -64,7 +66,7 @@ namespace Vim.UnitTest
         /// Verify that when the original EventHandler throws that it is passed on to the
         /// listed IExtensionErrorHandlers
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetProtectedEventHandler_Throws()
         {
             var exception = new Exception("hello world");
@@ -77,12 +79,13 @@ namespace Vim.UnitTest
         /// <summary>
         /// Verify that the BeginInvoke will actually schedule the original action
         /// </summary>
-        [Fact]
-        public void BeginInvoke_Priority_Standard()
+        [WpfFact]
+        public async Task RunInMainThreadAsyncNormal()
         {
             var didRun = false;
-            _protectedOperations.BeginInvoke(delegate { didRun = true; }, DispatcherPriority.Normal);
+            var task = _protectedOperations.RunInMainThreadAsync(delegate { didRun = true; }, dispatcherPriority: DispatcherPriority.Normal);
             Dispatcher.CurrentDispatcher.DoEvents();
+            await task;
             Assert.True(didRun);
         }
 
@@ -90,25 +93,27 @@ namespace Vim.UnitTest
         /// Verify that when an exception is thrown during processing that it makes it's way to the 
         /// IExtensionErrorHandler
         /// </summary>
-        [Fact]
-        public void BeginInvoke_Priority_Throws()
+        [WpfFact]
+        public async Task RunInMainThreadAsyncThrows()
         {
             var exception = new Exception("hello world");
             _errorHandler.Setup(x => x.HandleError(It.IsAny<object>(), exception)).Verifiable();
-            _protectedOperations.BeginInvoke(delegate { throw exception; }, DispatcherPriority.Normal);
+            var task = _protectedOperations.RunInMainThreadAsync(delegate { throw exception; });
             Dispatcher.CurrentDispatcher.DoEvents();
+            await task;
             _errorHandler.Verify();
         }
 
         /// <summary>
         /// Verify that the BeginInvoke will actually schedule the original action
         /// </summary>
-        [Fact]
-        public void BeginInvoke_NoPriority_Standard()
+        [WpfFact]
+        public async Task RunInMainThreadAsyncNoPriority()
         {
             var didRun = false;
-            _protectedOperations.BeginInvoke(delegate { didRun = true; });
+            var task = _protectedOperations.RunInMainThreadAsync(delegate { didRun = true; });
             Dispatcher.CurrentDispatcher.DoEvents();
+            await task;
             Assert.True(didRun);
         }
 
@@ -116,13 +121,14 @@ namespace Vim.UnitTest
         /// Verify that when an exception is thrown during processing that it makes it's way to the 
         /// IExtensionErrorHandler
         /// </summary>
-        [Fact]
-        public void BeginInvoke_NoPriority_Throws()
+        [WpfFact]
+        public async Task RunInMainThreadAsyncNoPriorityThrows()
         {
             var exception = new Exception("hello world");
             _errorHandler.Setup(x => x.HandleError(It.IsAny<object>(), exception)).Verifiable();
-            _protectedOperations.BeginInvoke(delegate { throw exception; });
+            var task = _protectedOperations.RunInMainThreadAsync(delegate { throw exception; });
             Dispatcher.CurrentDispatcher.DoEvents();
+            await task;
             _errorHandler.Verify();
         }
     }

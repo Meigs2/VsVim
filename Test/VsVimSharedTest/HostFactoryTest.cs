@@ -44,11 +44,12 @@ namespace Vim.VisualStudio.UnitTest
                 _mockFactory.Create<IDisplayWindowBrokerFactoryService>(MockBehavior.Loose).Object,
                 _mockFactory.Create<ITextManager>(MockBehavior.Loose).Object,
                 vsAdapter.Object,
-                ProtectedOperations,
+                VimProtectedOperations,
                 new VimBufferCoordinatorFactory(Vim),
                 _mockFactory.Create<IKeyUtil>(MockBehavior.Loose).Object,
                 _synchronizer.Object,
                 _vimApplicationSettings.Object,
+                _mockFactory.Create<IJoinableTaskFactoryProvider>(MockBehavior.Strict).Object,
                 new Lazy<ICommandTargetFactory, IOrderable>[] { });
         }
 

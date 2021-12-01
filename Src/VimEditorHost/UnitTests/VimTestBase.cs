@@ -113,6 +113,11 @@ namespace Vim.UnitTest
             get { return _vimEditorHost.ContentTypeRegistryService; }
         }
 
+        public IVimProtectedOperations VimProtectedOperations
+        {
+            get { return _vimEditorHost.VimProtectedOperations; }
+        }
+
         public IProtectedOperations ProtectedOperations
         {
             get { return _vimEditorHost.ProtectedOperations; }

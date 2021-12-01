@@ -6,11 +6,12 @@ using Moq;
 using Xunit;
 using Vim.UI.Wpf.Implementation.Misc;
 using Microsoft.VisualStudio.Threading;
+using Vim.UnitTest;
 
 #pragma warning disable CS0618
 namespace Vim.UI.Wpf.UnitTest
 {
-    public class DisplayWindowBrokerTest
+    public class DisplayWindowBrokerTest : VimTestBase
     {
         private readonly Mock<ICompletionBroker> _completionBroker;
         private readonly Mock<ISignatureHelpBroker> _signatureBroker;
@@ -35,7 +36,7 @@ namespace Vim.UI.Wpf.UnitTest
             _textView = new Mock<ITextView>();
             _brokerRaw = new DisplayWindowBroker(
                 _textView.Object,
-                new Mock<JoinableTaskFactory>().Object,
+                JoinableTaskFactory,
                 _completionBroker.Object,
                 _signatureBroker.Object,
                 _quickInfoBroker.Object);
@@ -43,7 +44,7 @@ namespace Vim.UI.Wpf.UnitTest
         }
 
 #if VS_SPECIFIC_2017
-        [Fact]
+        [WpfFact]
         public void DismissDisplayWindows1()
         {
             _quickInfoBroker.Setup(x => x.IsQuickInfoActive(_textView.Object)).Returns(true).Verifiable();

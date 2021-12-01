@@ -21,14 +21,14 @@ namespace Vim.VisualStudio.Implementation.Misc
     {
         private readonly ICommandMarginUtil _commandMarginUtil;
         private readonly IVsStatusbar _vsStatusbar;
-        private readonly IProtectedOperations _vimProtectedOperations;
+        private readonly IVimProtectedOperations _vimProtectedOperations;
         private readonly IVim _vim;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly DispatcherTimer _timer;
         private string _lastStatus;
 
         [ImportingConstructor]
-        internal StatusBarAdapter(IVim vim, IProtectedOperations vimProtectedOperations, ICommandMarginUtil commandMarginUtil, IVimApplicationSettings vimApplicationSettings, SVsServiceProvider vsServiceProvider)
+        internal StatusBarAdapter(IVim vim, IVimProtectedOperations vimProtectedOperations, ICommandMarginUtil commandMarginUtil, IVimApplicationSettings vimApplicationSettings, SVsServiceProvider vsServiceProvider)
         {
             _vim = vim;
             _vimProtectedOperations = vimProtectedOperations;
@@ -94,9 +94,9 @@ namespace Vim.VisualStudio.Implementation.Misc
         void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
         {
             // Let the command margin get into a known state before we disable it.  
-            _vimProtectedOperations.BeginInvoke(
+            _ = _vimProtectedOperations.RunInMainThreadAsync(
                 () => _commandMarginUtil.SetMarginVisibility(vimBuffer, _vimApplicationSettings.UseEditorCommandMargin),
-                DispatcherPriority.ApplicationIdle);
+                dispatcherPriority: DispatcherPriority.ApplicationIdle);
         }
     }
 }

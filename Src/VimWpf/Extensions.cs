@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Microsoft.VisualStudio.Text.Classification;
+using Microsoft.VisualStudio.Threading;
 
 namespace Vim.UI.Wpf
 {
@@ -46,22 +48,6 @@ namespace Vim.UI.Wpf
             }
 
             return defaultBrush;
-        }
-
-        #endregion
-
-        #region IProtectedOperations
-
-        public static void BeginInvoke(this IProtectedOperations protectedOperations, Action action)
-        {
-            var protectedAction = protectedOperations.GetProtectedAction(action);
-            Dispatcher.CurrentDispatcher.BeginInvoke(protectedAction, null);
-        }
-
-        public static void BeginInvoke(this IProtectedOperations protectedOperations, Action action, DispatcherPriority dispatcherPriority)
-        {
-            var protectedAction = protectedOperations.GetProtectedAction(action);
-            Dispatcher.CurrentDispatcher.BeginInvoke(protectedAction, dispatcherPriority, null);
         }
 
         #endregion

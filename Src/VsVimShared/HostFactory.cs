@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
+using Microsoft.VisualStudio.Threading;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
@@ -39,7 +40,7 @@ namespace Vim.VisualStudio
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
         private readonly ITextManager _textManager;
         private readonly IVsAdapter _adapter;
-        private readonly IProtectedOperations _protectedOperations;
+        private readonly IVimProtectedOperations _vimProtectedOperations;
         private readonly IVimBufferCoordinatorFactory _bufferCoordinatorFactory;
         private readonly IKeyUtil _keyUtil;
         private readonly IEditorToSettingsSynchronizer _editorToSettingSynchronizer;
@@ -52,11 +53,12 @@ namespace Vim.VisualStudio
             IDisplayWindowBrokerFactoryService displayWindowBrokerFactoryService,
             ITextManager textManager,
             IVsAdapter adapter,
-            IProtectedOperations protectedOperations,
+            IVimProtectedOperations vimProtectedOperations,
             IVimBufferCoordinatorFactory bufferCoordinatorFactory,
             IKeyUtil keyUtil,
             IEditorToSettingsSynchronizer editorToSettingSynchronizer,
             IVimApplicationSettings vimApplicationSettings,
+            IJoinableTaskFactoryProvider joinableTaskFactoryProvider,
             [ImportMany] IEnumerable<Lazy<ICommandTargetFactory, IOrderable>> commandTargetFactoryList)
         {
             _vim = vim;
@@ -64,7 +66,7 @@ namespace Vim.VisualStudio
             _adaptersFactory = adaptersFactory;
             _textManager = textManager;
             _adapter = adapter;
-            _protectedOperations = protectedOperations;
+            _vimProtectedOperations = vimProtectedOperations;
             _bufferCoordinatorFactory = bufferCoordinatorFactory;
             _keyUtil = keyUtil;
             _editorToSettingSynchronizer = editorToSettingSynchronizer;
@@ -128,7 +130,7 @@ namespace Vim.VisualStudio
             // view.  Occurs for aspx and .js pages
             void install() => VsFilterKeysAdapter.TryInstallFilterKeysAdapter(_adapter, vimBuffer);
 
-            _protectedOperations.BeginInvoke(install);
+            _ = _vimProtectedOperations.RunInMainThreadAsync(install);
         }
 
         /// <summary>
@@ -146,20 +148,20 @@ namespace Vim.VisualStudio
         /// </summary>
         private void ConnectToOleCommandTargetDelayed(IVimBuffer vimBuffer, ITextView textView, IVsTextView vsTextView)
         {
-            void connectInBackground() => _protectedOperations.BeginInvoke(
+            System.Threading.Tasks.Task connectAsync() => _vimProtectedOperations.RunInMainThreadAsync(
                 () => ConnectToOleCommandTarget(vimBuffer, textView, vsTextView),
-                DispatcherPriority.Background);
+                dispatcherPriority: DispatcherPriority.Background);
 
             EventHandler onFocus = null;
             onFocus = (sender, e) =>
             {
-                connectInBackground();
+                _ = connectAsync();
                 textView.GotAggregateFocus -= onFocus;
             };
 
             if (textView.HasAggregateFocus)
             {
-                connectInBackground();
+                _ = connectAsync();
             }
             else
             {
@@ -191,7 +193,7 @@ namespace Vim.VisualStudio
             // fire for ever IWpfTextView.  If the IWpfTextView doesn't have any shims it won't fire.  So
             // we post a simple action as a backup mechanism to catch this case.  
             _toSyncSet.Add(vimBuffer);
-            _protectedOperations.BeginInvoke(() => BeginSettingSynchronization(vimBuffer), DispatcherPriority.Loaded);
+            _ = _vimProtectedOperations.RunInMainThreadAsync(() => BeginSettingSynchronization(vimBuffer), dispatcherPriority: DispatcherPriority.Loaded);
         }
 
         #endregion

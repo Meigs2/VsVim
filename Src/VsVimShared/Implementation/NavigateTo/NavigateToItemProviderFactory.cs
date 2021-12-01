@@ -25,19 +25,19 @@ namespace Vim.VisualStudio.Implementation.NavigateTo
     [Export(typeof(IVisualModeSelectionOverride))]
     internal sealed class NavigateToItemProviderFactory : INavigateToItemProviderFactory, IThreadCommunicator, IVisualModeSelectionOverride
     {
-        private readonly JoinableTaskFactory _joinableTaskFactory;
+        private readonly IVimProtectedOperations _vimProtectedOperations;
         private readonly IVim _vim;
         private readonly ITextManager _textManager;
         private readonly UnwantedSelectionHandler _unwantedSelectionHandler;
         private bool _inSearch;
 
         [ImportingConstructor]
-        internal NavigateToItemProviderFactory(IVim vim, ITextManager textManager, IJoinableTaskFactoryProvider joinableTaskFactoryProvider)
+        internal NavigateToItemProviderFactory(IVim vim, ITextManager textManager, IVimProtectedOperations vimProtectedOperations)
         {
             _vim = vim;
             _textManager = textManager;
             _unwantedSelectionHandler = new UnwantedSelectionHandler(_vim);
-            _joinableTaskFactory = joinableTaskFactoryProvider.JoinableTaskFactory;
+            _vimProtectedOperations = vimProtectedOperations;
         }
 
         private void OnSearchStarted(string searchText)
@@ -80,8 +80,7 @@ namespace Vim.VisualStudio.Implementation.NavigateTo
         {
             try
             {
-                await _joinableTaskFactory.SwitchToMainThreadAsync();
-                action();
+                await _vimProtectedOperations.RunInMainThreadAsync(action);
             }
             catch
             {

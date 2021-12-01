@@ -68,7 +68,7 @@ namespace Vim.VisualStudio.UnitTest
             vsRunningDocumentTable.Setup(x => x.AdviseRunningDocTableEvents(It.IsAny<IVsRunningDocTableEvents3>(), out runningDocumentTableCookie)).Returns(VSConstants.S_OK);
 
             var sp = _factory.Create<SVsServiceProvider>();
-            sp.Setup(x => x.GetService(typeof(_DTE))).Returns(_dte.Object);
+            sp.Setup(x => x.GetService(typeof(SDTE))).Returns(_dte.Object);
             sp.Setup(x => x.GetService(typeof(SVsUIShell))).Returns(_uiVSShell.Object);
             sp.Setup(x => x.GetService(typeof(SVsShell))).Returns(_vsShell.Object);
             sp.Setup(x => x.GetService(typeof(IVsExtensibility))).Returns(_factory.Create<IVsExtensibility>().Object);
@@ -87,13 +87,12 @@ namespace Vim.VisualStudio.UnitTest
                 _factory.Create<ICSharpScriptExecutor>(MockBehavior.Loose).Object,
                 _vimApplicationSettings.Object,
                 _extensionAdapterBroker.Object,
-                ProtectedOperations,
+                VimProtectedOperations,
                 _factory.Create<IMarkDisplayUtil>(MockBehavior.Loose).Object,
                 _factory.Create<IControlCharUtil>(MockBehavior.Loose).Object,
                 _commandDispatcher.Object,
                 sp.Object,
-                _clipboardDevice.Object,
-                CompositionContainer.GetExport<IJoinableTaskFactoryProvider>().Value);
+                _clipboardDevice.Object);
             _host = _hostRaw;
         }
 

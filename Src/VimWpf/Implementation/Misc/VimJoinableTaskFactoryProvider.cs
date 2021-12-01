@@ -51,10 +51,10 @@ namespace Vim.UI.Wpf.Implementation.Misc
             s_joinableTaskFactory = joinableTaskFactory;
         }
 
-#region IJoinableTaskFactoryProvider
+        #region IJoinableTaskFactoryProvider
 
         JoinableTaskFactory IJoinableTaskFactoryProvider.JoinableTaskFactory => GetOrCreateJoinableTaskFactory();
 
-#endregion
+        #endregion
     }
 }

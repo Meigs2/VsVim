@@ -430,59 +430,6 @@ type internal ChangeTracker
     interface IVimBufferCreationListener with
         member x.VimBufferCreated buffer = x.OnVimBufferCreated buffer
 
-/// Implements the safe dispatching interface which prevents application crashes for 
-/// exceptions reaching the dispatcher loop
-[<Export(typeof<IProtectedOperations>)>]
-type internal ProtectedOperations =
-
-    val _errorHandlers: List<Lazy<IExtensionErrorHandler>>
-
-    [<ImportingConstructor>]
-    new ([<ImportMany>] errorHandlers: Lazy<IExtensionErrorHandler> seq) = 
-        { _errorHandlers = errorHandlers |> GenericListUtil.OfSeq }
-
-    new (errorHandler: IExtensionErrorHandler) = 
-        let l = Lazy<IExtensionErrorHandler>(fun _ -> errorHandler)
-        let list = l |> Seq.singleton |> GenericListUtil.OfSeq
-        { _errorHandlers = list }
-
-    new () =
-        { _errorHandlers = Seq.empty |> GenericListUtil.OfSeq }
-
-    /// Produce a delegate that can safely execute the given action.  If it throws an exception 
-    /// then make sure to alert the error handlers
-    member private x.GetProtectedAction (action : Action): Action =
-        let a () = 
-            try
-                action.Invoke()
-            with
-            | e -> x.AlertAll e
-        Action(a)
-
-    member private x.GetProtectedEventHandler (eventHandler: EventHandler): EventHandler = 
-        let a sender e = 
-            try
-                eventHandler.Invoke(sender, e)
-            with
-            | e -> x.AlertAll e
-        EventHandler(a)
-
-    /// Alert all of the IExtensionErrorHandlers that the given Exception occurred.  Be careful to guard
-    /// against them for Exceptions as we are still on the dispatcher loop here and exceptions would be
-    /// fatal
-    member x.AlertAll e = 
-        VimTrace.TraceError(e)
-        for handler in x._errorHandlers do
-            try
-                handler.Value.HandleError(x, e)
-            with 
-            | e -> Debug.Fail((sprintf "Error handler threw: %O" e))
-
-    interface IProtectedOperations with
-        member x.GetProtectedAction action = x.GetProtectedAction action
-        member x.GetProtectedEventHandler eventHandler = x.GetProtectedEventHandler eventHandler
-        member x.Report ex = x.AlertAll ex
-
 [<Export(typeof<IWordCompletionSessionFactoryService>)>]
 type internal VimWordCompletionSessionFactoryService 
     [<ImportingConstructor>]

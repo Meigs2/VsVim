@@ -20,12 +20,11 @@ namespace Vim.UI.Wpf
 {
     public abstract class VimHost : IVimHost, IWpfTextViewCreationListener
     {
-        private readonly IProtectedOperations _protectedOperations;
+        private readonly IVimProtectedOperations _vimProtectedOperations;
         private readonly ITextBufferFactoryService _textBufferFactoryService;
         private readonly ITextEditorFactoryService _textEditorFactoryService;
         private readonly ITextDocumentFactoryService _textDocumentFactoryService;
         private readonly IEditorOperationsFactoryService _editorOperationsFactoryService;
-        private readonly JoinableTaskFactory _joinableTaskFactory;
         private readonly List<ITextView> _textViewList = new List<ITextView>();
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
         private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
@@ -83,23 +82,26 @@ namespace Vim.UI.Wpf
 
         public JoinableTaskFactory JoinableTaskFactory
         {
-            get { return _joinableTaskFactory; }
+            get { return _vimProtectedOperations.JoinableTaskFactory; }
+        }
+
+        public IVimProtectedOperations VimProtectedOperations
+        {
+            get { return _vimProtectedOperations; }
         }
 
         protected VimHost(
-            IProtectedOperations protectedOperations,
+            IVimProtectedOperations vimProtectedOperations,
             ITextBufferFactoryService textBufferFactoryService,
             ITextEditorFactoryService textEditorFactoryService,
             ITextDocumentFactoryService textDocumentFactoryService,
-            IEditorOperationsFactoryService editorOperationsFactoryService,
-            JoinableTaskFactory joinableTaskFactory)
+            IEditorOperationsFactoryService editorOperationsFactoryService)
         {
-            _protectedOperations = protectedOperations;
+            _vimProtectedOperations = vimProtectedOperations;
             _textBufferFactoryService = textBufferFactoryService;
             _textEditorFactoryService = textEditorFactoryService;
             _textDocumentFactoryService = textDocumentFactoryService;
             _editorOperationsFactoryService = editorOperationsFactoryService;
-            _joinableTaskFactory = joinableTaskFactory;
         }
 
         public virtual void EnsurePackageLoaded()
@@ -265,7 +267,7 @@ namespace Vim.UI.Wpf
                 }
 
                 // Then schedule the action.
-                _protectedOperations.BeginInvoke(doAction, DispatcherPriority.Loaded);
+                _ = VimProtectedOperations.RunInMainThreadAsync(doAction, dispatcherPriority: DispatcherPriority.Loaded);
             }
 
             if (textView is IWpfTextView wpfTextView && !wpfTextView.VisualElement.IsLoaded)

@@ -32,7 +32,7 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly IVimBuffer _vimBuffer;
         private readonly ITextView _textView;
-        private readonly IProtectedOperations _protectedOperations;
+        private readonly IVimProtectedOperations _vimProtectedOperations;
         private readonly Result<IVsTextLines> _vsTextLines;
         private readonly ReadOnlyCollection<ITagger<ITag>> _taggerCollection;
         private readonly ReadOnlyCollection<IExternalEditAdapter> _externalEditorAdapters;
@@ -62,14 +62,14 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
         internal ExternalEditMonitor(
             IVimApplicationSettings vimApplicationSettings,
             IVimBuffer buffer,
-            IProtectedOperations protectedOperations,
+            IVimProtectedOperations vimProtectedOperations,
             Result<IVsTextLines> vsTextLines,
             ReadOnlyCollection<ITagger<ITag>> taggerCollection,
             ReadOnlyCollection<IExternalEditAdapter> externalEditorAdapters)
         {
             _vimApplicationSettings = vimApplicationSettings;
             _vsTextLines = vsTextLines;
-            _protectedOperations = protectedOperations;
+            _vimProtectedOperations = vimProtectedOperations;
             _externalEditorAdapters = externalEditorAdapters;
             _taggerCollection = taggerCollection;
             _vimBuffer = buffer;
@@ -304,7 +304,7 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
                 PerformCheck(saved);
             }
 
-            _protectedOperations.BeginInvoke(doCheck, DispatcherPriority.Loaded);
+            _ = _vimProtectedOperations.RunInMainThreadAsync(doCheck, dispatcherPriority: DispatcherPriority.Loaded);
         }
 
         internal List<SnapshotSpan> GetExternalEditSpans(CheckKind kind)
