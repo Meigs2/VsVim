@@ -20,6 +20,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)HostFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ICommandDispatcher.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ICommandTarget.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\CSharpPlugin\AssemblyGenerator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\CSharpPlugin\CSharpPluginMethodParameters.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\CSharpScript\CSharpScriptExecutor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IVsVimPlugin.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ICSharpPluginExecutor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ICSharpScriptExecutor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IExtensionAdapter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IExternalEditAdapter.cs" />
@@ -30,12 +35,14 @@
       <DependentUpon>ConflictingKeyBindingMarginControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\ConflictingKey\ConflictingKeyBindingMarginProvider.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Implementation\CSharpScript\CSharpScriptExecutor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\CSharpPlugin\CSharpPluginExecutor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\CSharpPlugin\CSharpPluginGlobals.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\CSharpScript\CSharpScriptGlobals.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\EditorFormatDefinitions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\ExternalEdit\ExternalEditMonitor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\ExternalEdit\ExternalEditorManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\ExternalEdit\SnippetExternalEditAdapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\ICSharpPluginLoader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\InlineRename\IInlineRenameUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\InlineRename\InlineRenameListenerFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\InlineRename\InlineRenameUtil.cs" />

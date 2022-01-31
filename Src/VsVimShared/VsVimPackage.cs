@@ -1,4 +1,6 @@
-﻿using EnvDTE;
+﻿#if VimPlugin
+#else
+using EnvDTE;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.OLE.Interop;
@@ -21,6 +23,7 @@ using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
 using Task = System.Threading.Tasks.Task;
+
 
 namespace Vim.VisualStudio
 {
@@ -312,3 +315,5 @@ namespace Vim.VisualStudio
         #endregion 
     }
 }
+
+#endif
