@@ -123,46 +123,42 @@ namespace VsVimShared.Implementation.CSharpPlugin
         /// <param name="code"></param>
         /// <returns></returns>
         /// <exception cref="InvalidOperationException"></exception>
-        public Assembly GeneratePluginAssembly(string pluginMainPath)
+        public Assembly GeneratePluginAssembly(string pluginInitPath)
         {
             var encoding = Encoding.UTF8;
             var assemblyName = AssemblyName ?? Path.GetRandomFileName();
-            var symbolsName = Path.ChangeExtension(assemblyName, "pdb");
-            var nonSystemUsings = new HashSet<UsingDirectiveSyntax>();
+            var symbolsName = Path.ChangeExtension(pluginInitPath, "pdb");
 
-            var allCsFiles = Directory.GetFiles(Path.GetDirectoryName(pluginMainPath), "*.cs", SearchOption.AllDirectories).ToHashSet();
-            allCsFiles.Remove(pluginMainPath);
+            var allCsFiles = Directory.GetFiles(Path.GetDirectoryName(pluginInitPath), "*.cs", SearchOption.AllDirectories).ToHashSet();
+            allCsFiles.Remove(pluginInitPath);
 
             var embeddedTexts = new List<EmbeddedText>();
 
-            var pluginFileCompilations = new List<CSharpCompilation>();
+            var syntaxTrees = new List<SyntaxTree>();
             byte[] buffer;
             SourceText sourceText;
             foreach (var csFile in allCsFiles)
             {
                 buffer = File.ReadAllBytes(csFile);
                 sourceText = SourceText.From(buffer, buffer.Length, encoding, canBeEmbedded: true);
-                EmbeddedText.FromSource(csFile, sourceText);
-
-                var compilation = CreateCompilation(csFile, encoding, ref nonSystemUsings, assemblyName, sourceText, OutputKind.NetModule);
-
-                pluginFileCompilations.Add(compilation);
+                embeddedTexts.Add(EmbeddedText.FromSource(csFile, sourceText));
+                syntaxTrees.Add(CSharpSyntaxTree.ParseText(sourceText, new CSharpParseOptions(), csFile));
             }
 
-            pluginFileCompilations.ForEach(e =>
-            {
-                using var memStream = new MemoryStream();
-                var result = e.Emit(memStream);
-                if (result.Success)
-                {
-                    _references.Add(MetadataReference.CreateFromStream(memStream));
-                }
-            });
-
-            buffer = File.ReadAllBytes(pluginMainPath);
+            buffer = File.ReadAllBytes(pluginInitPath);
             sourceText = SourceText.From(buffer, buffer.Length, encoding, canBeEmbedded: true);
 
-            var pluginCompilation = CreateCompilation(pluginMainPath, encoding, ref nonSystemUsings, assemblyName, sourceText, OutputKind.DynamicallyLinkedLibrary);
+            var pluginInitSyntaxTree = CSharpSyntaxTree.ParseText(sourceText, new CSharpParseOptions(), pluginInitPath);
+            var rootNode = pluginInitSyntaxTree.GetRoot() as CompilationUnitSyntax;
+            syntaxTrees.Add(pluginInitSyntaxTree);
+
+            var references = _references.ToArray();
+            var compilation = CSharpCompilation.Create(assemblyName,
+                syntaxTrees.ToArray(),
+                references, 
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                .WithOptimizationLevel(OptimizationLevel.Debug)
+                .WithPlatform(Platform.AnyCpu));
 
             using var assemblyStream = new MemoryStream();
             using var symbolsStream = new MemoryStream();
@@ -170,45 +166,19 @@ namespace VsVimShared.Implementation.CSharpPlugin
             var emitOptions = new EmitOptions(
                 debugInformationFormat: DebugInformationFormat.PortablePdb,
                 pdbFilePath: symbolsName);
-;
 
-            var emission = pluginCompilation.Emit(
+            var emission = compilation.Emit(
                 peStream: assemblyStream,
                 pdbStream: symbolsStream,
                 embeddedTexts: embeddedTexts,
                 options: emitOptions);
 
-
             assemblyStream.Seek(0, SeekOrigin.Begin);
             symbolsStream.Seek(0, SeekOrigin.Begin);
 
+            //File.WriteAllBytes(symbolsName, symbolsStream.ToArray());
+
             return Assembly.Load(assemblyStream.ToArray(), symbolsStream.ToArray());
-        }
-
-        private CSharpCompilation CreateCompilation(string csFile, Encoding encoding, ref HashSet<UsingDirectiveSyntax> nonSystemUsings, string assemblyName, SourceText sourceText, OutputKind outputKind)
-        {
-            var syntaxTree = CSharpSyntaxTree.ParseText(
-                sourceText,
-                new CSharpParseOptions(),
-                csFile);
-
-            var rootNode = syntaxTree.GetRoot() as CompilationUnitSyntax;
-
-            foreach (var usingNode in rootNode.Usings)
-            {
-                if (usingNode.Name.ToString() != "System" && !usingNode.Name.ToString().StartsWith("System."))
-                {
-                    nonSystemUsings.Add(usingNode);
-                }
-            }
-
-            var references = _references.ToArray();
-            var compilation = CSharpCompilation.Create(assemblyName, new[] { syntaxTree }, references,
-                new CSharpCompilationOptions(outputKind)
-                    .WithOptimizationLevel(OptimizationLevel.Debug)
-                    .WithPlatform(Platform.AnyCpu));
-
-            return compilation;
         }
     }
 }
