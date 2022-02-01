@@ -17,6 +17,8 @@ namespace VsVimPlugin
         private CSharpPluginGlobals globals { get; set; }
         private List<MethodInfo> _exposedMethods = new List<MethodInfo>();
 
+        public string PluginGuid => "1aed8e3a-1792-4d50-9f5a-9f3d10dc2eba";
+
         /// <summary>
         /// Entry point of the plugin.
         /// </summary>

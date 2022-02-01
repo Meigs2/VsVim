@@ -102,13 +102,13 @@ namespace Vim.VisualStudio.Implementation.CSharpPlugin
                 return false;
             }
 
-            var pluginInitText = File.ReadAllText(pluginInitFilePath);
+
             var assemblyGenerator = new AssemblyGenerator();
             assemblyGenerator.ReferenceAssemblyContainingType<System.Windows.MessageBox>();
             assemblyGenerator.ReferenceAssemblyContainingType<Vim.IVim>();
             assemblyGenerator.ReferenceAssemblyContainingType<Vim.VisualStudio.ApplicationSettingsEventArgs>();
 
-            var assembly = assemblyGenerator.Generate(pluginInitText);
+            var assembly = assemblyGenerator.GeneratePluginAssembly(pluginInitFilePath);
 
             var returnValue = Activator.CreateInstance(assembly?.GetExportedTypes().FirstOrDefault(t => t.GetInterfaces().Contains(typeof(IVsVimPlugin)))!);
 

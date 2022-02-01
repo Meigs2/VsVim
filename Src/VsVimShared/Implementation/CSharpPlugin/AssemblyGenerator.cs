@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
 
@@ -116,30 +117,52 @@ namespace VsVimShared.Implementation.CSharpPlugin
         }
 
         /// <summary>
-        /// Compile the code passed into this method to a new assembly in memory
+        /// Compile the code passed into this method to a new assembly in memory. If rootPath
+        /// is specified, the assembly will attempt to resolve any other files in the location.
         /// </summary>
         /// <param name="code"></param>
         /// <returns></returns>
         /// <exception cref="InvalidOperationException"></exception>
-        public Assembly Generate(string code)
+        public Assembly GeneratePluginAssembly(string pluginMainPath)
         {
             var encoding = Encoding.UTF8;
             var assemblyName = AssemblyName ?? Path.GetRandomFileName();
             var symbolsName = Path.ChangeExtension(assemblyName, "pdb");
-            var buffer = encoding.GetBytes(code);
-            var sourceText = SourceText.From(buffer, buffer.Length, encoding, canBeEmbedded: true);
-            var sourceCodePath = "generated.cs";
+            var nonSystemUsings = new HashSet<UsingDirectiveSyntax>();
 
-            var syntaxTree = CSharpSyntaxTree.ParseText(
-                sourceText,
-                new CSharpParseOptions(),
-                path: sourceCodePath);
+            var allCsFiles = Directory.GetFiles(Path.GetDirectoryName(pluginMainPath), "*.cs", SearchOption.AllDirectories).ToHashSet();
+            allCsFiles.Remove(pluginMainPath);
 
-            var references = _references.ToArray();
-            var compilation = CSharpCompilation.Create(assemblyName, new[] { syntaxTree }, references,
-                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
-                    .WithOptimizationLevel(OptimizationLevel.Debug)
-                    .WithPlatform(Platform.AnyCpu));
+            var embeddedTexts = new List<EmbeddedText>();
+
+            var pluginFileCompilations = new List<CSharpCompilation>();
+            byte[] buffer;
+            SourceText sourceText;
+            foreach (var csFile in allCsFiles)
+            {
+                buffer = File.ReadAllBytes(csFile);
+                sourceText = SourceText.From(buffer, buffer.Length, encoding, canBeEmbedded: true);
+                EmbeddedText.FromSource(csFile, sourceText);
+
+                var compilation = CreateCompilation(csFile, encoding, ref nonSystemUsings, assemblyName, sourceText, OutputKind.NetModule);
+
+                pluginFileCompilations.Add(compilation);
+            }
+
+            pluginFileCompilations.ForEach(e =>
+            {
+                using var memStream = new MemoryStream();
+                var result = e.Emit(memStream);
+                if (result.Success)
+                {
+                    _references.Add(MetadataReference.CreateFromStream(memStream));
+                }
+            });
+
+            buffer = File.ReadAllBytes(pluginMainPath);
+            sourceText = SourceText.From(buffer, buffer.Length, encoding, canBeEmbedded: true);
+
+            var pluginCompilation = CreateCompilation(pluginMainPath, encoding, ref nonSystemUsings, assemblyName, sourceText, OutputKind.DynamicallyLinkedLibrary);
 
             using var assemblyStream = new MemoryStream();
             using var symbolsStream = new MemoryStream();
@@ -147,38 +170,45 @@ namespace VsVimShared.Implementation.CSharpPlugin
             var emitOptions = new EmitOptions(
                 debugInformationFormat: DebugInformationFormat.PortablePdb,
                 pdbFilePath: symbolsName);
+;
 
-            var embeddedTexts = new List<EmbeddedText>
-            {
-                EmbeddedText.FromSource(sourceCodePath, sourceText),
-            };
-
-            EmitResult result = compilation.Emit(
+            var emission = pluginCompilation.Emit(
                 peStream: assemblyStream,
                 pdbStream: symbolsStream,
                 embeddedTexts: embeddedTexts,
                 options: emitOptions);
 
-            if (!result.Success)
-            {
-                var errors = new List<string>();
-
-                IEnumerable<Diagnostic> failures = result.Diagnostics.Where(diagnostic =>
-                    diagnostic.IsWarningAsError ||
-                    diagnostic.Severity == DiagnosticSeverity.Error);
-
-                foreach (Diagnostic diagnostic in failures)
-                    errors.Add($"{diagnostic.Id}: {diagnostic.GetMessage()}");
-
-                throw new Exception(String.Join("\n", errors));
-            }
-
-            Console.WriteLine(code);
 
             assemblyStream.Seek(0, SeekOrigin.Begin);
             symbolsStream.Seek(0, SeekOrigin.Begin);
 
             return Assembly.Load(assemblyStream.ToArray(), symbolsStream.ToArray());
+        }
+
+        private CSharpCompilation CreateCompilation(string csFile, Encoding encoding, ref HashSet<UsingDirectiveSyntax> nonSystemUsings, string assemblyName, SourceText sourceText, OutputKind outputKind)
+        {
+            var syntaxTree = CSharpSyntaxTree.ParseText(
+                sourceText,
+                new CSharpParseOptions(),
+                csFile);
+
+            var rootNode = syntaxTree.GetRoot() as CompilationUnitSyntax;
+
+            foreach (var usingNode in rootNode.Usings)
+            {
+                if (usingNode.Name.ToString() != "System" && !usingNode.Name.ToString().StartsWith("System."))
+                {
+                    nonSystemUsings.Add(usingNode);
+                }
+            }
+
+            var references = _references.ToArray();
+            var compilation = CSharpCompilation.Create(assemblyName, new[] { syntaxTree }, references,
+                new CSharpCompilationOptions(outputKind)
+                    .WithOptimizationLevel(OptimizationLevel.Debug)
+                    .WithPlatform(Platform.AnyCpu));
+
+            return compilation;
         }
     }
 }
