@@ -1,6 +1,5 @@
 <Project>
   <PropertyGroup>
-    <DefineConstants>$(DefineConstants);VS_SPECIFIC_2022</DefineConstants>
     <DefineConstants Condition="'$(VsVimProjectType)' == 'Plugin'">$(DefineConstants);VIM_PLUGIN</DefineConstants>
   </PropertyGroup>
 </Project>

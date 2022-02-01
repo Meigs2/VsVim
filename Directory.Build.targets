@@ -24,6 +24,6 @@
     Condition="'$(VsVimVisualStudioTargetVersion)' == '17.0' AND '$(VsVimProjectType)' != ''" />
 
   <Import 
-    Project="$(MSBuildThisFileDirectory)lib\Plugin.Build.targets"
+    Project="$(MSBuildThisFileDirectory)References\Common\Plugin.Build.targets"
     Condition="'$(VsVimProjectType)' == 'Plugin'" />
 </Project>
