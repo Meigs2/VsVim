@@ -1,5 +1,5 @@
 ﻿#nullable enable
-#if VS_SPECIFIC_2019 || VS_SPECIFIC_2022 || VimPlugin
+#if VS_SPECIFIC_2019 || VS_SPECIFIC_2022
 using System;
 using System.Collections.Generic;
 using System.Text;

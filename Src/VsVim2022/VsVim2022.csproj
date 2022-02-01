@@ -81,4 +81,7 @@
   </ItemGroup>
   <Import Project="..\VsVimShared\VsVimShared.projitems" Label="Shared" />
   <Import Project="..\VimWpf\VimWpf.projitems" Label="Shared" />
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="if not exist &quot;$(SolutionDir)lib\&quot; mkdir &quot;$(SolutionDir)lib\&quot;&#xD;&#xA;copy &quot;$(OutDir)VsVim.dll&quot; &quot;$(SolutionDir)lib\VsVim.dll&quot; /y&#xD;&#xA;if $(Configuration)==Debug copy &quot;$(OutDir)VsVim.pdb&quot; &quot;$(SolutionDir)lib\VsVim.pdb&quot; /y&#xD;&#xA;copy &quot;$(OutDir)Vim.Core.dll&quot; &quot;$(SolutionDir)lib\Vim.Core.dll&quot; /y&#xD;&#xA;if $(Configuration)==Debug copy &quot;$(OutDir)Vim.Core.pdb&quot; &quot;$(SolutionDir)lib\Vim.Core.pdb&quot; /y&#xD;&#xA;" />
+  </Target>
 </Project>

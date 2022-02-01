@@ -28,7 +28,7 @@ using Vim.Interpreter;
 #if VS_SPECIFIC_2019 || VS_SPECIFIC_2022
 using Microsoft.VisualStudio.Platform.WindowManagement;
 using Microsoft.VisualStudio.PlatformUI.Shell;
-#elif VS_SPECIFIC_2017 || VimPlugin
+#elif VS_SPECIFIC_2017
 #else
 #error Unsupported configuration
 #endif
@@ -246,7 +246,7 @@ namespace Vim.VisualStudio
         internal const string CommandNamePeekDefinition = "Edit.PeekDefinition";
         internal const string CommandNameGoToDeclaration = "Edit.GoToDeclaration";
 
-#if VS_SPECIFIC_2017 || VimPlugin
+#if VS_SPECIFIC_2017
         internal const VisualStudioVersion VisualStudioVersion = global::Vim.VisualStudio.VisualStudioVersion.Vs2017;
 #elif VS_SPECIFIC_2019
         internal const VisualStudioVersion VisualStudioVersion = global::Vim.VisualStudio.VisualStudioVersion.Vs2019;
@@ -812,7 +812,7 @@ namespace Vim.VisualStudio
             return frame != null && frame.FrameView == ViewManager.Instance.ActiveView;
         }
 
-#elif VS_SPECIFIC_2017 || VimPlugin
+#elif VS_SPECIFIC_2017
         internal WindowFrameState GetWindowFrameState() => WindowFrameState.Default;
 
         internal bool IsActiveWindowFrame(IVsWindowFrame vsWindowFrame) => false;

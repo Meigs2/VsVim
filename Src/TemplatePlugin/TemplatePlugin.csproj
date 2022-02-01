@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net472</TargetFramework>
+    <VsVimProjectType>Plugin</VsVimProjectType>
+    <VsVimVisualStudioTargetVersion>17.0</VsVimVisualStudioTargetVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\VimCore\VimCore.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="WindowsFormsIntegration" />
+  </ItemGroup>
+
+  <Import Project="..\VimWpf\VimWpf.projitems" Label="Shared" />
+
+  <Import Project="..\VsVimShared\VsVimShared.projitems" Label="Shared" />
+
+</Project>

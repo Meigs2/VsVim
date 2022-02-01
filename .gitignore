@@ -86,3 +86,5 @@ VsVim.Vs2013.pdb
 # MSBuild logs are frequently produced for diagnostic reasons.  Don't include 
 # them by accident in a build.
 msbuild.log
+/lib/VsVim.dll
+/lib/Vim.Core.dll

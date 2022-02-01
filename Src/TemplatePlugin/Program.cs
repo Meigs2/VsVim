@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
@@ -12,7 +11,7 @@ using Vim;
 using Vim.Interpreter;
 using Vim.VisualStudio.Implementation.CSharpPlugin;
 
-namespace VsVimPlugin;
+namespace TemplatePlugin;
 
 class Program
 {
