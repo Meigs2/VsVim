@@ -8,10 +8,9 @@ namespace Vim.VisualStudio
 {
     public interface IVsVimPlugin : IDisposable
     {
-        string PluginGuid { get; }
         bool Init(CSharpPluginGlobals pluginGlobals);
 
-        List<MethodInfo> GetExposedMethods();
+        List<MethodInfo> GetPluginMethods();
 
         object RunMethod(string methodName, params object[] args);
     }

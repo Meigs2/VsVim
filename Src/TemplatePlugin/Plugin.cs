@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 using System.Windows;
+using TemplatePlugin.Extensions;
 using Vim.VisualStudio;
 using Vim.VisualStudio.Implementation.CSharpPlugin;
 
@@ -16,8 +17,6 @@ namespace VsVimPlugin
     {
         private CSharpPluginGlobals globals { get; set; }
         private List<MethodInfo> _exposedMethods = new List<MethodInfo>();
-
-        public string PluginGuid => "1aed8e3a-1792-4d50-9f5a-9f3d10dc2eba";
 
         /// <summary>
         /// Entry point of the plugin.
@@ -47,7 +46,7 @@ namespace VsVimPlugin
             MessageBox.Show("Success!");
         }
 
-        public List<MethodInfo> GetExposedMethods()
+        public List<MethodInfo> GetPluginMethods()
         {
             return _exposedMethods;
         }
@@ -56,10 +55,13 @@ namespace VsVimPlugin
         {
             try
             {
-               var result = _exposedMethods
-                    .FirstOrDefault(m => string.Equals(m.Name, methodName, StringComparison.OrdinalIgnoreCase))
-                    ?.Invoke(this, args);
-               return result;
+                var method = _exposedMethods.First();
+               // var del = method.CreateDelegate();
+
+               // var result = _exposedMethods
+               //     .FirstOrDefault(m => string.Equals(m.Name, methodName, StringComparison.OrdinalIgnoreCase))
+               //     ?.Invoke(this, args);
+               //return result;
             }
             catch (Exception)
             {

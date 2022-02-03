@@ -3,27 +3,17 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Emit;
-using Microsoft.CodeAnalysis.Text;
 using Vim.Interpreter;
 using VsVimShared.Implementation.CSharpPlugin;
 
 namespace Vim.VisualStudio.Implementation.CSharpPlugin
 {
-    using Microsoft.CodeAnalysis.Scripting;
-    using CSharpScript = Microsoft.CodeAnalysis.CSharp.Scripting.CSharpScript;
-
     [Export(typeof(ICSharpPluginExecutor))]
     internal sealed partial class CSharpPluginExecutor : ICSharpPluginExecutor
     {
         private const string pluginsFolderName = "vsvimplugins";
         private const string pluginInitFileName = "plugin.cs";
-        private Dictionary<string, IVsVimPlugin> _plugins = new(StringComparer.OrdinalIgnoreCase);
-        private ScriptOptions _scriptOptions;
+        private readonly Dictionary<string, IVsVimPlugin> _loadedPlugins = new(StringComparer.OrdinalIgnoreCase);
 
         private string PluginsLocationFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), pluginsFolderName);
 
@@ -57,9 +47,9 @@ namespace Vim.VisualStudio.Implementation.CSharpPlugin
 
             if (!plugin.Init(new CSharpPluginGlobals(vsVimInstance))) return;
 
-            if (_plugins.ContainsKey(pluginName)) _plugins[pluginName]?.Dispose();
+            if (_loadedPlugins.ContainsKey(pluginName)) _loadedPlugins[pluginName]?.Dispose();
 
-            _plugins[pluginName] = plugin;
+            _loadedPlugins[pluginName] = plugin;
         }
 
         internal void Execute(IVimBuffer vimBuffer, CallInfo callInfo, bool recompile)
@@ -81,7 +71,7 @@ namespace Vim.VisualStudio.Implementation.CSharpPlugin
                     LoadPlugin(vimBuffer.Vim, pluginName);
                 }
 
-                _plugins[pluginName]?.RunMethod(methodName, new CSharpPluginMethodParameters(callInfo, vimBuffer));
+                _loadedPlugins[pluginName]?.RunMethod(methodName, new CSharpPluginMethodParameters(callInfo, vimBuffer));
             }
             catch (Exception ex)
             {
@@ -101,7 +91,6 @@ namespace Vim.VisualStudio.Implementation.CSharpPlugin
                 VimTrace.TraceError($"{pluginInitFileName} not found for {pluginName}.");
                 return false;
             }
-
 
             var assemblyGenerator = new AssemblyGenerator();
             assemblyGenerator.ReferenceAssemblyContainingType<System.Windows.MessageBox>();

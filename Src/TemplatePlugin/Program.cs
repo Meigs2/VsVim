@@ -1,12 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using Microsoft.FSharp.Collections;
+﻿using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Windows.Forms;
+using TemplatePlugin.Extensions;
 using Vim;
 using Vim.Interpreter;
 using Vim.VisualStudio.Implementation.CSharpPlugin;
@@ -15,14 +20,58 @@ namespace TemplatePlugin;
 
 public class Program
 {
+    public delegate object FastDelegate(object target, object[] parameters);
+
+    public static int Test(int a, int b)
+    {
+        return a + b;
+        //return a;
+    }
+
     static void Main(string[] args)
     {
-        // Display the number of command line arguments.
         var fullPath = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, @"..\..\."));
         var runner = new CSharpPluginExecutor();
         var a = new Vim();
+        var p = new Program();
+        var method = typeof(Program).GetMethod("Test");
+
+        var fastInvoker = (FastDelegate)method.GetMethodInvoker(typeof(FastDelegate));
+        fastInvoker.Invoke(null, new object[] { 1, 2 });
+
+        var efinv = new EfficientInvoker(FastDelegate);
+
+        Stopwatch watch = new Stopwatch();
+        watch.Start();
+        for (int i = 0; i < 1000000; i++)
+        {
+            method.Invoke(null, new object[] { 1, 2 });
+        }
+        watch.Stop();
+        Console.WriteLine("1000000 times invoked by Reflection: " + watch.ElapsedMilliseconds + "ms");
+
+        Stopwatch watch1 = new Stopwatch();
+        watch1.Start();
+        for (int i = 0; i < 1000000; i++)
+        {
+            fastInvoker(null, new object[] { 1, 2 });
+        }
+        watch1.Stop();
+        Console.WriteLine("1000000 times invoked by FastInvoke: " + watch1.ElapsedMilliseconds + "ms");
+
+        Stopwatch watch2 = new Stopwatch();
+        watch2.Start();
+        for (int i = 0; i < 1000000; i++)
+        {
+            Test(1, 2);
+        }
+        watch2.Stop();
+        Console.WriteLine("1000000 times invoked by DirectCall: " + watch2.ElapsedMilliseconds + "ms");
+
+        Console.ReadLine();
+
         runner.LoadAllPlugins(a);
-        runner.Execute(new VimBuffer(), new CallInfo("VsVimPlugin.Test",string.Empty, LineRangeSpecifier.None, true), false);
+        runner.Execute(new VimBuffer(), new CallInfo("VsVimPlugin.Test", string.Empty, LineRangeSpecifier.None, true), false);
         Console.WriteLine();
         Console.ReadKey();
     }
